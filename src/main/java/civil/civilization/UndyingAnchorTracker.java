@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -53,7 +54,7 @@ public final class UndyingAnchorTracker {
         for (var dimEntry : anchors.entrySet()) {
             String dim = dimEntry.getKey();
             for (AnchorEntry a : dimEntry.getValue().values()) {
-                out.add(new CivilStorage.StoredUndyingAnchor(dim, a.x(), a.y(), a.z(), a.activated(), a.lastUsedGlobal()));
+                out.add(new CivilStorage.StoredUndyingAnchor(dim, a.x(), a.y(), a.z(), a.activated(), a.lastUsedGlobal(), a.factionId()));
             }
         }
         return out;
@@ -63,7 +64,11 @@ public final class UndyingAnchorTracker {
     public void clearAnchorsDirty() { anchorsDirty = false; }
 
     /** Single anchor entry: position + activation state. */
-    public record AnchorEntry(int x, int y, int z, boolean activated, long lastUsedGlobal) {}
+    public record AnchorEntry(int x, int y, int z, boolean activated, long lastUsedGlobal, UUID factionId) {
+        public AnchorEntry(int x, int y, int z, boolean activated, long lastUsedGlobal) {
+            this(x, y, z, activated, lastUsedGlobal, null);
+        }
+    }
 
     /** Result of findNearestValidAnchor. */
     public record ValidAnchorResult(BlockPos anchorPos, BlockPos teleportDest) {}
@@ -78,7 +83,7 @@ public final class UndyingAnchorTracker {
 
         List<CivilStorage.StoredUndyingAnchor> stored = civilStorage.loadUndyingAnchors();
         for (CivilStorage.StoredUndyingAnchor a : stored) {
-            AnchorEntry entry = new AnchorEntry(a.x(), a.y(), a.z(), a.activated(), a.lastUsedGlobal());
+            AnchorEntry entry = new AnchorEntry(a.x(), a.y(), a.z(), a.activated(), a.lastUsedGlobal(), a.factionId());
             getOrCreateDim(a.dim()).put(packPos(a.x(), a.y(), a.z()), entry);
             indexAnchor(a.dim(), entry);
         }
@@ -241,10 +246,14 @@ public final class UndyingAnchorTracker {
      * Called when a player activates the structure with a totem. Adds or updates the anchor.
      */
     public void onAnchorActivated(String dim, int x, int y, int z) {
+        onAnchorActivated(dim, x, y, z, null);
+    }
+
+    public void onAnchorActivated(String dim, int x, int y, int z, UUID factionId) {
         if (!initialized) return;
 
         long key = packPos(x, y, z);
-        AnchorEntry entry = new AnchorEntry(x, y, z, true, 0);
+        AnchorEntry entry = new AnchorEntry(x, y, z, true, 0, factionId);
 
         var dimMap = getOrCreateDim(dim);
         AnchorEntry prev = dimMap.put(key, entry);
@@ -272,7 +281,7 @@ public final class UndyingAnchorTracker {
         AnchorEntry current = dimMap.get(key);
         if (current == null) return;
 
-        AnchorEntry updated = new AnchorEntry(x, y, z, false, now);
+        AnchorEntry updated = new AnchorEntry(x, y, z, false, now, current.factionId());
         dimMap.put(key, updated);
         updateIndexedAnchor(dim, current, updated);
         anchorsDirty = true;

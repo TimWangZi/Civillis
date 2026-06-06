@@ -3,6 +3,7 @@ package civil;
 import civil.map.CivilMapPerfTrace;
 import civil.civilization.ServerClock;
 import civil.civilization.BlockScanner;
+import civil.faction.FactionManager;
 import civil.civilization.BaseScoreSourceRegistry;
 import civil.civilization.FarmShrineTracker;
 import civil.civilization.HeadTracker;
@@ -79,6 +80,8 @@ public class CivilMod {
     /** Structure-based zone policy (spawn bypass, caution, HUD). */
     private static ZonePolicyService zonePolicyService;
 
+    private static FactionManager factionManager;
+
     /**
      * Common initialization — creates services and registers items/sounds.
      * Called by the platform-specific entry point (Fabric or NeoForge).
@@ -98,6 +101,7 @@ public class CivilMod {
         farmShrineTracker = new FarmShrineTracker();
         townCenterTracker = new TownCenterTracker();
         baseScoreSourceRegistry = new BaseScoreSourceRegistry();
+        factionManager = new FactionManager();
         CivilServices.initCivilizationService(civilizationService);
         CivilServices.initCivilizationCache(cacheService);
         CivilServices.initHeadTracker(headTracker);
@@ -106,6 +110,7 @@ public class CivilMod {
         CivilServices.initFarmShrineTracker(farmShrineTracker);
         CivilServices.initTownCenterTracker(townCenterTracker);
         CivilServices.initBaseScoreSourceRegistry(baseScoreSourceRegistry);
+        CivilServices.initFactionManager(factionManager);
 
         // Registry calls (ModComponents, ModSounds, ModItems) are handled by
         // platform-specific entry points: Fabric calls registerDirect(),
@@ -162,6 +167,9 @@ public class CivilMod {
             if (townCenterTracker != null) {
                 townCenterTracker.initialize(cacheService.getStorage());
             }
+            if (factionManager != null) {
+                factionManager.initialize(cacheService.getStorage());
+            }
             if (zonePolicyService != null) {
                 zonePolicyService.clear();
             }
@@ -191,6 +199,9 @@ public class CivilMod {
             }
             if (undyingAnchorTracker != null) {
                 undyingAnchorTracker.shutdown();
+            }
+            if (factionManager != null) {
+                factionManager.shutdown();
             }
             if (zonePolicyService != null) {
                 zonePolicyService.clear();

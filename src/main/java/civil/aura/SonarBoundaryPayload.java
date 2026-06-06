@@ -28,7 +28,8 @@ public record SonarBoundaryPayload(
         float[] zoneZoneMinY,
         float[] zoneZoneMaxY,
         long[] civHighZone2D,
-        byte sonarType
+        byte sonarType,
+        List<BoundaryFaceData> foreignFaces
 ) implements CustomPacketPayload {
 
     public static final Type<SonarBoundaryPayload> ID =
@@ -73,6 +74,10 @@ public record SonarBoundaryPayload(
             buf.writeLong(v);
         }
         buf.writeByte(payload.sonarType);
+        buf.writeVarInt(payload.foreignFaces.size());
+        for (BoundaryFaceData face : payload.foreignFaces) {
+            face.write(buf);
+        }
     }
 
     private static SonarBoundaryPayload decode(RegistryFriendlyByteBuf buf) {
@@ -121,9 +126,14 @@ public record SonarBoundaryPayload(
             civHighZone2D[i] = buf.readLong();
         }
         byte sonarType = buf.readByte();
+        int ffCount = buf.readVarInt();
+        List<BoundaryFaceData> foreignFaces = new ArrayList<>(ffCount);
+        for (int i = 0; i < ffCount; i++) {
+            foreignFaces.add(BoundaryFaceData.read(buf));
+        }
         return new SonarBoundaryPayload(kindId, cx, cy, cz, wMinY, wMaxY, faces, shrineFaces,
                 shrineZone2D, shrineZoneMinY, shrineZoneMaxY, zoneFaces, zoneZone2D,
-                zoneZoneMinY, zoneZoneMaxY, civHighZone2D, sonarType);
+                zoneZoneMinY, zoneZoneMaxY, civHighZone2D, sonarType, foreignFaces);
     }
 
     @Override

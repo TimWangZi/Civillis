@@ -217,7 +217,7 @@ public final class PlayerAwarePrefetcher {
             CivilMod.LOGGER.info("[zone][fast] SEND epoch={} {} -> {} (overrideNow={} base={}) player={}",
                     epoch, oldState, newState, overrideNow, baseState, playerId);
         }
-        CivilPlatform.sendToPlayer(player, new ZoneTransitionPayload(epoch, newState.id()));
+        CivilPlatform.sendToPlayer(player, new ZoneTransitionPayload(epoch, newState.id(), "", false));
         return 1;
     }
 
@@ -525,7 +525,7 @@ public final class PlayerAwarePrefetcher {
                                     key.epoch(), currentEpoch, oldState, newState, playerId);
                         }
                         // Window id = completed receipt bucket second (prior wall second); not same as fast's current-epoch send.
-                        CivilPlatform.sendToPlayer(player, new ZoneTransitionPayload(key.epoch(), newState.id()));
+                        CivilPlatform.sendToPlayer(player, new ZoneTransitionPayload(key.epoch(), newState.id(), "", false));
                         stats.transitions++;
                     }
                 } else if (CivilMod.DEBUG) {

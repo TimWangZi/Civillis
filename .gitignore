@@ -20,7 +20,9 @@ hs_err_pid*
 replay_pid*
 .mtj.tmp/
 
-# IDE / Eclipse
+# IDE
+.idea/
+# Eclipse
 .project
 .classpath
 .settings/

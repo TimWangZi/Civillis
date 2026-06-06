@@ -18,6 +18,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.UUID;
+
 /**
  * Activates a farm shrine: right-click a <b>lit</b> soul campfire with a bone when crying obsidian is below;
  * extinguishes the campfire and registers the anchor.
@@ -69,7 +71,12 @@ public final class FarmShrineActivationHandler {
             return true;
         }
 
-        tracker.onShrineActivated(dim, x, y, z);
+        civil.faction.FactionManager fm = CivilServices.getFactionManager();
+        UUID factionId = null;
+        if (fm != null && fm.isInitialized()) {
+            factionId = fm.getOrCreateFactionForPlayer(player.getUUID(), player.getName().getString());
+        }
+        tracker.onShrineActivated(dim, x, y, z, factionId);
         CivilAdvancements.tryAward(player, CivilAdvancements.FARM_SHRINE);
         stack.shrink(1);
         level.playSound(null, pos, SoundEvents.WARDEN_HEARTBEAT, SoundSource.BLOCKS, 0.62f, 0.74f);

@@ -1,7 +1,12 @@
 package civil.map;
 
+import civil.CivilServices;
 import civil.civilization.CivilRegionClassifier;
+import civil.civilization.CivilRegionKind;
+import civil.faction.Faction;
+import civil.faction.FactionManager;
 import civil.registry.DimensionPolicyRegistry;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 /**
@@ -30,7 +35,7 @@ public final class CivilMapTintPalette {
         LOOKUP_EXCEPTION
     }
 
-    public record ChunkTintEval(byte band, ScoreUnknownReason scoreUnknownReason) {
+    public record ChunkTintEval(byte band, int factionColor, ScoreUnknownReason scoreUnknownReason) {
     }
 
     private CivilMapTintPalette() {
@@ -41,18 +46,27 @@ public final class CivilMapTintPalette {
      */
     public static ChunkTintEval evaluateTintForChunk(ServerLevel level, int cx, int cz, int sy) {
         if (!DimensionPolicyRegistry.policyFor(level).civilization()) {
-            return new ChunkTintEval(UNKNOWN, null);
+            return new ChunkTintEval(UNKNOWN, 0, null);
         }
         CivilRegionClassifier.ClassifyResult r = CivilRegionClassifier.classify(level, cx, cz, sy);
+        int factionColor = 0;
+        if (r.kind() == CivilRegionKind.HIGH) {
+            FactionManager fm = CivilServices.getFactionManager();
+            if (fm != null && fm.isInitialized()) {
+                BlockPos vcCenter = new BlockPos((cx << 4) + 8, (sy << 4) + 8, (cz << 4) + 8);
+                Faction f = fm.getFactionAt(level, vcCenter);
+                if (f != null) factionColor = f.color();
+            }
+        }
         return switch (r.kind()) {
-            case SHRINE -> new ChunkTintEval(MONSTER, null);
-            case ZONE -> new ChunkTintEval(ZONE, null);
-            case HIGH -> new ChunkTintEval(HIGH, null);
+            case SHRINE -> new ChunkTintEval(MONSTER, 0, null);
+            case ZONE -> new ChunkTintEval(ZONE, 0, null);
+            case HIGH -> new ChunkTintEval(HIGH, factionColor, null);
             case NONE -> {
                 if (r.scoreUnknownReason() != null) {
-                    yield new ChunkTintEval(UNKNOWN, scoreUnknownReason(r.scoreUnknownReason()));
+                    yield new ChunkTintEval(UNKNOWN, 0, scoreUnknownReason(r.scoreUnknownReason()));
                 }
-                yield new ChunkTintEval(UNKNOWN, null);
+                yield new ChunkTintEval(UNKNOWN, 0, null);
             }
         };
     }

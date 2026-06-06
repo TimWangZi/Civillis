@@ -46,7 +46,8 @@ public final class TownCenterTracker {
             List<AppliedEffect> appliedEffects,
             Map<Integer, LevelEffectChoice> levelEffectState,
             boolean openRegistration,
-            List<Member> members) {
+            List<Member> members,
+            UUID factionId) {
 
         public boolean isGameplayActive(long gameTime) {
             return activated || (deactivateDeadlineTick > 0 && deactivateDeadlineTick > gameTime);
@@ -123,7 +124,7 @@ public final class TownCenterTracker {
         for (var dimEntry : centers.entrySet()) {
             String dim = dimEntry.getKey();
             for (TownCenterEntry e : dimEntry.getValue().values()) {
-                out.add(new CivilStorage.StoredTownCenter(dim, e));
+                out.add(new CivilStorage.StoredTownCenter(dim, e, e.factionId()));
             }
         }
         return out;
@@ -159,11 +160,16 @@ public final class TownCenterTracker {
 
     public boolean add(String dim, int x, int y, int z, int level, boolean activated,
                        UUID creatorUuid, String creatorName) {
+        return add(dim, x, y, z, level, activated, creatorUuid, creatorName, null);
+    }
+
+    public boolean add(String dim, int x, int y, int z, int level, boolean activated,
+                       UUID creatorUuid, String creatorName, UUID factionId) {
         TownCenterEntry entry = new TownCenterEntry(
                 x, y, z, level, activated, 0L,
                 "", creatorUuid, creatorName == null ? "" : creatorName,
                 List.of(), Map.of(),
-                false, List.of());
+                false, List.of(), factionId);
         return add(dim, x, y, z, entry);
     }
 
@@ -184,7 +190,7 @@ public final class TownCenterTracker {
                 x, y, z, cur.level(), activated, activated ? 0L : cur.deactivateDeadlineTick(),
                 cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                 cur.appliedEffects(), cur.levelEffectState(),
-                cur.openRegistration(), cur.members()));
+                cur.openRegistration(), cur.members(), cur.factionId()));
     }
 
     public void setShutdownDeadline(String dim, int x, int y, int z, long deadlineTick) {
@@ -192,7 +198,7 @@ public final class TownCenterTracker {
                 x, y, z, cur.level(), cur.activated(), deadlineTick,
                 cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                 cur.appliedEffects(), cur.levelEffectState(),
-                cur.openRegistration(), cur.members()));
+                cur.openRegistration(), cur.members(), cur.factionId()));
     }
 
     public void setLevel(String dim, int x, int y, int z, int level) {
@@ -200,7 +206,7 @@ public final class TownCenterTracker {
                 x, y, z, level, cur.activated(), cur.deactivateDeadlineTick(),
                 cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                 cur.appliedEffects(), cur.levelEffectState(),
-                cur.openRegistration(), cur.members()));
+                cur.openRegistration(), cur.members(), cur.factionId()));
     }
 
     public void setDisplayName(String dim, int x, int y, int z, String displayName) {
@@ -208,7 +214,7 @@ public final class TownCenterTracker {
                 x, y, z, cur.level(), cur.activated(), cur.deactivateDeadlineTick(),
                 displayName == null ? "" : displayName, cur.creatorUuid(), cur.creatorName(),
                 cur.appliedEffects(), cur.levelEffectState(),
-                cur.openRegistration(), cur.members()));
+                cur.openRegistration(), cur.members(), cur.factionId()));
     }
 
     public void setOpenRegistration(String dim, int x, int y, int z, boolean open) {
@@ -216,7 +222,7 @@ public final class TownCenterTracker {
                 x, y, z, cur.level(), cur.activated(), cur.deactivateDeadlineTick(),
                 cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                 cur.appliedEffects(), cur.levelEffectState(),
-                open, cur.members()));
+                open, cur.members(), cur.factionId()));
     }
 
     public void addMember(String dim, int x, int y, int z, UUID uuid, String name) {
@@ -227,7 +233,7 @@ public final class TownCenterTracker {
                     x, y, z, cur.level(), cur.activated(), cur.deactivateDeadlineTick(),
                     cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                     cur.appliedEffects(), cur.levelEffectState(),
-                    cur.openRegistration(), List.copyOf(next));
+                    cur.openRegistration(), List.copyOf(next), cur.factionId());
         });
     }
 
@@ -241,7 +247,7 @@ public final class TownCenterTracker {
                     x, y, z, cur.level(), cur.activated(), cur.deactivateDeadlineTick(),
                     cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                     cur.appliedEffects(), cur.levelEffectState(),
-                    cur.openRegistration(), List.copyOf(next));
+                    cur.openRegistration(), List.copyOf(next), cur.factionId());
         });
     }
 
@@ -253,7 +259,7 @@ public final class TownCenterTracker {
                     x, y, z, cur.level(), cur.activated(), cur.deactivateDeadlineTick(),
                     cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                     cur.appliedEffects(), Map.copyOf(next),
-                    cur.openRegistration(), cur.members());
+                    cur.openRegistration(), cur.members(), cur.factionId());
         });
     }
 
@@ -265,7 +271,7 @@ public final class TownCenterTracker {
                     x, y, z, cur.level(), cur.activated(), cur.deactivateDeadlineTick(),
                     cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                     List.copyOf(next), cur.levelEffectState(),
-                    cur.openRegistration(), cur.members());
+                    cur.openRegistration(), cur.members(), cur.factionId());
         });
     }
 
@@ -274,7 +280,7 @@ public final class TownCenterTracker {
                 x, y, z, cur.level(), false, 0L,
                 cur.displayName(), cur.creatorUuid(), cur.creatorName(),
                 cur.appliedEffects(), cur.levelEffectState(),
-                cur.openRegistration(), cur.members()));
+                cur.openRegistration(), cur.members(), cur.factionId()));
     }
 
     public List<AuthorizedTcView> collectAuthorizedViews(String dim, UUID playerUuid, long gameTime) {

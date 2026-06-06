@@ -1,6 +1,7 @@
 package civil;
 
 import civil.civilization.BaseScoreSourceRegistry;
+import civil.faction.FactionManager;
 import civil.civilization.FarmShrineTracker;
 import civil.civilization.HeadTracker;
 import civil.civilization.UndyingAnchorTracker;
@@ -27,6 +28,7 @@ public final class CivilServices {
     private static TownCenterTracker townCenterTracker;
     private static BaseScoreSourceRegistry baseScoreSourceRegistry;
     private static ZonePolicyService zonePolicyService;
+    private static FactionManager factionManager;
 
     private CivilServices() {
     }
@@ -61,6 +63,10 @@ public final class CivilServices {
 
     public static void initZonePolicyService(ZonePolicyService service) {
         zonePolicyService = service;
+    }
+
+    public static void initFactionManager(FactionManager manager) {
+        factionManager = manager;
     }
 
     public static CivilizationService getCivilizationService() {
@@ -98,6 +104,10 @@ public final class CivilServices {
     /** Zone policy (structure-based spawn bypass + caution semantics). null if not initialized. */
     public static ZonePolicyService getZonePolicyService() {
         return zonePolicyService;
+    }
+
+    public static FactionManager getFactionManager() {
+        return factionManager;
     }
 
     /**

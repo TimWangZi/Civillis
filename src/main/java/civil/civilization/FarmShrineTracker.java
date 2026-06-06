@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,7 +42,7 @@ public final class FarmShrineTracker {
             String dim = dimEntry.getKey();
             for (ShrineEntry s : dimEntry.getValue().values()) {
                 if (s.activated()) {
-                    out.add(new CivilStorage.StoredFarmShrine(dim, s.x(), s.y(), s.z(), true));
+                    out.add(new CivilStorage.StoredFarmShrine(dim, s.x(), s.y(), s.z(), true, s.factionId()));
                 }
             }
         }
@@ -62,13 +63,19 @@ public final class FarmShrineTracker {
         private final int y;
         private final int z;
         private final boolean activated;
+        private final UUID factionId;
         private final Set<Long> headPosSet = ConcurrentHashMap.newKeySet();
 
         public ShrineEntry(int x, int y, int z, boolean activated) {
+            this(x, y, z, activated, null);
+        }
+
+        public ShrineEntry(int x, int y, int z, boolean activated, UUID factionId) {
             this.x = x;
             this.y = y;
             this.z = z;
             this.activated = activated;
+            this.factionId = factionId;
         }
 
         public int x() {
@@ -85,6 +92,10 @@ public final class FarmShrineTracker {
 
         public boolean activated() {
             return activated;
+        }
+
+        public UUID factionId() {
+            return factionId;
         }
 
         public Set<Long> headPosSet() {
@@ -296,9 +307,13 @@ public final class FarmShrineTracker {
     }
 
     public void onShrineActivated(String dim, int x, int y, int z) {
+        onShrineActivated(dim, x, y, z, null);
+    }
+
+    public void onShrineActivated(String dim, int x, int y, int z, UUID factionId) {
         if (!initialized) return;
         long key = packPos(x, y, z);
-        ShrineEntry entry = new ShrineEntry(x, y, z, true);
+        ShrineEntry entry = new ShrineEntry(x, y, z, true, factionId);
         getOrCreateDim(dim).put(key, entry);
         indexShrine(dim, entry);
         rebuildHeadPosSetForShrine(dim, entry);

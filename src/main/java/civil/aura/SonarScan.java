@@ -7,6 +7,7 @@ import civil.civilization.FarmShrineTracker;
 import civil.civilization.VoxelChunkKey;
 import civil.civilization.ZonePolicyService;
 import civil.config.CivilConfig;
+import civil.faction.FactionManager;
 import civil.registry.DimensionPolicyRegistry;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.UUID;
 
 /**
  * Directional BFS sonar scan engine for protection aura visualization.
@@ -91,6 +93,12 @@ public final class SonarScan {
     /** Tick when the scan started (for boundary linger timing). */
     private final long startTick;
 
+    /** Scanning player's faction ID (null = no faction). */
+    private final UUID scannerFactionId;
+
+    /** Cache: VC → factionId, populated during BFS expansion. */
+    private final Map<VoxelChunkKey, UUID> vcFactionCache = new HashMap<>();
+
     // ========== Construction ==========
 
     /**
@@ -105,11 +113,16 @@ public final class SonarScan {
     }
 
     public SonarScan(ServerLevel world, BlockPos playerPos, long worldTick, int maxRadius) {
+        this(world, playerPos, worldTick, maxRadius, null);
+    }
+
+    public SonarScan(ServerLevel world, BlockPos playerPos, long worldTick, int maxRadius, UUID scannerFactionId) {
         this.world = world;
         this.center = VoxelChunkKey.from(playerPos);
         this.threshold = CivilConfig.spawnThresholdMid;
         this.startTick = worldTick;
         this.maxRadius = Math.max(1, maxRadius);
+        this.scannerFactionId = scannerFactionId;
 
         this.playerInHigh = computeIsCivHighForBfs(world, this.center, playerPos);
 
@@ -272,7 +285,15 @@ public final class SonarScan {
                     key.getCx() * 16 + 8,
                     key.getSy() * 16 + 8,
                     key.getCz() * 16 + 8);
-            return computeIsCivHighForBfs(world, key, centerBlock);
+            boolean high = computeIsCivHighForBfs(world, key, centerBlock);
+            if (high) {
+                FactionManager fm = CivilServices.getFactionManager();
+                if (fm != null && fm.isInitialized()) {
+                    vcFactionCache.putIfAbsent(key, fm.getFactionAt(world, centerBlock) != null
+                            ? fm.getFactionAt(world, centerBlock).id() : null);
+                }
+            }
+            return high;
         } catch (Exception e) {
             if (CivilMod.DEBUG) {
                 LOGGER.warn("[civil-sonar] Score check failed for {}: {}", key, e.getMessage());
@@ -330,6 +351,14 @@ public final class SonarScan {
 
     public long getStartTick() {
         return startTick;
+    }
+
+    public UUID scannerFactionId() {
+        return scannerFactionId;
+    }
+
+    public UUID factionOf(VoxelChunkKey key) {
+        return vcFactionCache.get(key);
     }
 
     /** Chunks scanned (expanded into) during the last tick — for scan wave particles. */

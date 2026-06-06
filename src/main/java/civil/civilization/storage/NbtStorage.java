@@ -18,8 +18,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -139,6 +142,7 @@ public final class NbtStorage implements CivilStorage {
     private static final String FARM_SHRINES_FILE = "farm_shrines.nbt";
     private static final String TOWN_CENTERS_FILE = "town_centers.nbt";
     private static final String BASE_SCORE_SOURCES_FILE = "base_score_sources.nbt";
+    private static final String FACTIONS_FILE = "factions.nbt";
 
     @Override
     public List<StoredMobHead> loadMobHeads() {
@@ -201,7 +205,10 @@ public final class NbtStorage implements CivilStorage {
                         e.getString("dim").orElse(""),
                         e.getInt("x").orElse(0), e.getInt("y").orElse(0), e.getInt("z").orElse(0),
                         e.getBoolean("activated").orElse(false),
-                        e.getLong("lastUsedGlobal").orElse(0L)));
+                        e.getLong("lastUsedGlobal").orElse(0L),
+                        e.contains("factionIdMost") && e.contains("factionIdLeast")
+                                ? new UUID(e.getLong("factionIdMost").orElse(0L), e.getLong("factionIdLeast").orElse(0L))
+                                : null));
             }
             return out;
         } catch (Exception e) {
@@ -224,6 +231,10 @@ public final class NbtStorage implements CivilStorage {
                 e.putInt("z", a.z());
                 e.putBoolean("activated", a.activated());
                 e.putLong("lastUsedGlobal", a.lastUsedGlobal());
+                if (a.factionId() != null) {
+                    e.putLong("factionIdMost", a.factionId().getMostSignificantBits());
+                    e.putLong("factionIdLeast", a.factionId().getLeastSignificantBits());
+                }
                 entries.add(e);
             }
             CompoundTag root = new CompoundTag();
@@ -248,7 +259,10 @@ public final class NbtStorage implements CivilStorage {
                 out.add(new StoredFarmShrine(
                         e.getString("dim").orElse(""),
                         e.getInt("x").orElse(0), e.getInt("y").orElse(0), e.getInt("z").orElse(0),
-                        e.getBoolean("activated").orElse(false)));
+                        e.getBoolean("activated").orElse(false),
+                        e.contains("factionIdMost") && e.contains("factionIdLeast")
+                                ? new UUID(e.getLong("factionIdMost").orElse(0L), e.getLong("factionIdLeast").orElse(0L))
+                                : null));
             }
             return out;
         } catch (Exception e) {
@@ -270,6 +284,10 @@ public final class NbtStorage implements CivilStorage {
                 e.putInt("y", s.y());
                 e.putInt("z", s.z());
                 e.putBoolean("activated", s.activated());
+                if (s.factionId() != null) {
+                    e.putLong("factionIdMost", s.factionId().getMostSignificantBits());
+                    e.putLong("factionIdLeast", s.factionId().getLeastSignificantBits());
+                }
                 entries.add(e);
             }
             CompoundTag root = new CompoundTag();
@@ -297,7 +315,7 @@ public final class NbtStorage implements CivilStorage {
             for (int i = 0; i < entries.size(); i++) {
                 CompoundTag e = entries.getCompound(i).orElse(new CompoundTag());
                 String dim = e.getString("dim").orElse("");
-                out.add(new StoredTownCenter(dim, TownCenterNbtCodec.readEntry(e)));
+                out.add(new StoredTownCenter(dim, TownCenterNbtCodec.readEntry(e), TownCenterNbtCodec.readEntry(e).factionId()));
             }
             return out;
         } catch (Exception e) {
@@ -321,6 +339,72 @@ public final class NbtStorage implements CivilStorage {
             NbtIo.writeCompressed(root, p);
         } catch (Exception e) {
             LOGGER.warn("[civil-storage] Failed to write town_centers.nbt: {}", e.getMessage());
+        }
+    }
+
+    // ========== Factions ==========
+
+    @Override
+    public List<StoredFaction> loadFactions() {
+        Path p = resolve(FACTIONS_FILE);
+        if (p == null || !Files.isRegularFile(p)) return Collections.emptyList();
+        try {
+            CompoundTag root = NbtIo.readCompressed(p, NbtAccounter.unlimitedHeap());
+            if (root == null || !root.contains("entries")) return Collections.emptyList();
+            ListTag entries = root.getList("entries").orElse(new ListTag());
+            List<StoredFaction> out = new ArrayList<>(entries.size());
+            for (int i = 0; i < entries.size(); i++) {
+                CompoundTag e = entries.getCompound(i).orElse(new CompoundTag());
+                UUID id = new UUID(e.getLong("idMost").orElse(0L), e.getLong("idLeast").orElse(0L));
+                UUID owner = new UUID(e.getLong("ownerMost").orElse(0L), e.getLong("ownerLeast").orElse(0L));
+                Set<UUID> members = new HashSet<>();
+                ListTag mList = e.getList("members").orElse(new ListTag());
+                for (int j = 0; j < mList.size(); j++) {
+                    CompoundTag mTag = mList.getCompound(j).orElse(new CompoundTag());
+                    members.add(new UUID(mTag.getLong("most").orElse(0L), mTag.getLong("least").orElse(0L)));
+                }
+                String name = e.getString("name").orElse("");
+                int color = e.getInt("color").orElse(0);
+                long createdAt = e.getLong("createdAt").orElse(0L);
+                out.add(new StoredFaction(id, name, owner, members, color, createdAt));
+            }
+            return out;
+        } catch (Exception ex) {
+            LOGGER.warn("[civil-storage] Failed to load factions.nbt: {}", ex.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void writeFactions(List<StoredFaction> snapshot) {
+        Path p = resolve(FACTIONS_FILE);
+        if (p == null) return;
+        try {
+            ListTag entries = new ListTag();
+            for (StoredFaction sf : snapshot) {
+                CompoundTag e = new CompoundTag();
+                e.putLong("idMost", sf.id().getMostSignificantBits());
+                e.putLong("idLeast", sf.id().getLeastSignificantBits());
+                e.putLong("ownerMost", sf.owner().getMostSignificantBits());
+                e.putLong("ownerLeast", sf.owner().getLeastSignificantBits());
+                e.putString("name", sf.name());
+                e.putInt("color", sf.color());
+                e.putLong("createdAt", sf.createdAt());
+                ListTag mList = new ListTag();
+                for (UUID m : sf.members()) {
+                    CompoundTag mTag = new CompoundTag();
+                    mTag.putLong("most", m.getMostSignificantBits());
+                    mTag.putLong("least", m.getLeastSignificantBits());
+                    mList.add(mTag);
+                }
+                e.put("members", mList);
+                entries.add(e);
+            }
+            CompoundTag root = new CompoundTag();
+            root.put("entries", entries);
+            NbtIo.writeCompressed(root, p);
+        } catch (Exception ex) {
+            LOGGER.warn("[civil-storage] Failed to write factions.nbt: {}", ex.getMessage());
         }
     }
 

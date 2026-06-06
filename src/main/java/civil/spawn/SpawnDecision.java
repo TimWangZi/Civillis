@@ -32,6 +32,8 @@ public record SpawnDecision(boolean block, double score, String branch,
     public static final String BRANCH_DIM_NEUTRAL = "DIM_NEUTRAL";
     /** Datapack {@code civil_spawn_gate_entities} whitelist — allow before zone/score. */
     public static final String BRANCH_SPAWN_GATE_WHITELIST = "SPAWN_GATE_WHITELIST";
+    /** Spawn position is inside another player's faction territory — no protection. */
+    public static final String BRANCH_FOREIGN_TERRITORY = "FOREIGN_TERRITORY";
 
     /** Convenience constructor for non-head branches (no head info). */
     public SpawnDecision(boolean block, double score, String branch) {

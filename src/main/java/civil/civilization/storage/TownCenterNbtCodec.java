@@ -69,6 +69,9 @@ public final class TownCenterNbtCodec {
         }
         membership.put("members", members);
         e.put("membership", membership);
+        if (entry.factionId() != null) {
+            putUuid(e, "factionId", entry.factionId());
+        }
         return e;
     }
 
@@ -85,7 +88,7 @@ public final class TownCenterNbtCodec {
                     x, y, z, level, activated, deadline,
                     "", null, "",
                     List.of(), Map.of(),
-                    false, List.of());
+                    false, List.of(), null);
         }
 
         CompoundTag identity = e.getCompound("identity").orElse(new CompoundTag());
@@ -130,11 +133,13 @@ public final class TownCenterNbtCodec {
             }
         }
 
+        UUID factionId = readUuid(e, "factionId");
+
         return new TownCenterTracker.TownCenterEntry(
                 x, y, z, level, activated, deadline,
                 displayName, creatorUuid, creatorName,
                 applied, levelState,
-                openRegistration, List.copyOf(members));
+                openRegistration, List.copyOf(members), factionId);
     }
 
     /** Missing {@code schema} is treated as {@link #SCHEMA_VERSION} for local dev saves. */

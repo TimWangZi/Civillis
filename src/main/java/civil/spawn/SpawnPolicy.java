@@ -6,6 +6,8 @@ import civil.civilization.CScore;
 import civil.civilization.FarmShrineTracker;
 import civil.civilization.ZonePolicyService;
 import civil.config.CivilConfig;
+import civil.faction.Faction;
+import civil.faction.FactionManager;
 import civil.registry.DimensionPolicyRegistry;
 import civil.registry.SpawnGateEntityRegistry;
 import net.minecraft.world.entity.EntityType;
@@ -77,6 +79,15 @@ public final class SpawnPolicy {
         ZonePolicyService zonePolicyService = CivilServices.getZonePolicyService();
         if (zonePolicyService != null && zonePolicyService.allowsHostileSpawn(world, pos, entityType)) {
             return new SpawnDecision(false, 0, SpawnDecision.BRANCH_ZONE_POLICY);
+        }
+
+        // Faction check: if position is inside another player's faction territory, no protection
+        FactionManager fm = CivilServices.getFactionManager();
+        if (fm != null && fm.isInitialized()) {
+            Faction factionAtPos = fm.getFactionAt(world, pos);
+            if (factionAtPos != null) {
+                return new SpawnDecision(false, 0, SpawnDecision.BRANCH_FOREIGN_TERRITORY);
+            }
         }
 
         CScore cScore = CivilServices.getCivilizationService().getCScoreAt(world, pos);

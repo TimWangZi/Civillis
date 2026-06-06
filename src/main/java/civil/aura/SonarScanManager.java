@@ -168,7 +168,13 @@ public final class SonarScanManager {
         scanRadius = Math.max(1, scanRadius);
 
         long worldTick = serverWorld.getGameTime();
-        SonarScan scan = new SonarScan(serverWorld, origin, worldTick, scanRadius);
+        java.util.UUID scannerFactionId = null;
+        civil.faction.FactionManager fm = CivilServices.getFactionManager();
+        if (fm != null && fm.isInitialized()) {
+            civil.faction.Faction f = fm.getPlayerFaction(player.getUUID());
+            if (f != null) scannerFactionId = f.id();
+        }
+        SonarScan scan = new SonarScan(serverWorld, origin, worldTick, scanRadius, scannerFactionId);
 
         double originX = origin.getX() + 0.5;
         double originY = origin.getY() + 0.5;
@@ -268,10 +274,21 @@ public final class SonarScanManager {
         double wallMinY = cy - WALL_HALF_HEIGHT;
         double wallMaxY = cy + WALL_HALF_HEIGHT;
         Set<Long> blockedCivFaceKeys = collectFacePlaneKeys(shrineResult.faces, zoneResult.faces);
-        List<BoundaryFaceData> faces = scan.getAllBoundaries().stream()
-                .map(BoundaryFaceData::fromBoundaryFace)
-                .filter(face -> !blockedCivFaceKeys.contains(facePlaneKey(face)))
-                .toList();
+        List<BoundaryFaceData> ownFaces = new ArrayList<>();
+        List<BoundaryFaceData> foreignFaces = new ArrayList<>();
+        UUID scannerFactionId = scan.scannerFactionId();
+        for (BoundaryFace face : scan.getAllBoundaries()) {
+            BoundaryFaceData data = BoundaryFaceData.fromBoundaryFace(face);
+            if (blockedCivFaceKeys.contains(facePlaneKey(data))) continue;
+            UUID highFaction = scan.factionOf(face.highSide());
+            boolean isOwn = (scannerFactionId == null && highFaction == null)
+                    || (scannerFactionId != null && scannerFactionId.equals(highFaction));
+            if (isOwn) {
+                ownFaces.add(data);
+            } else {
+                foreignFaces.add(data);
+            }
+        }
 
         double cx = scan.getCenter().getCx() * 16.0 + 8.0;
         double cz = scan.getCenter().getCz() * 16.0 + 8.0;
@@ -342,9 +359,9 @@ public final class SonarScanManager {
 
         SonarBoundaryPayload payload = new SonarBoundaryPayload(
                 playerReg, cx, cy, cz, wallMinY, wallMaxY,
-                faces, shrineResult.faces, shrineZone2DArray,
+                ownFaces, shrineResult.faces, shrineZone2DArray,
                 shrineZoneMinYArray, shrineZoneMaxYArray, zoneResult.faces, zone2DArray, zoneMinY, zoneMaxY,
-                civHighZone2DArray, sonarType.id());
+                civHighZone2DArray, sonarType.id(), foreignFaces);
 
         CivilPlatform.sendToPlayer(player, payload);
 
@@ -356,8 +373,8 @@ public final class SonarScanManager {
         }
 
         if (CivilMod.DEBUG) {
-            LOGGER.info("[civil-sonar] Sent boundary to {}: civF={} shrineF={} zoneF={} Y=[{}, {}]",
-                    player.getName().getString(), faces.size(), shrineResult.faces.size(), zoneResult.faces.size(),
+            LOGGER.info("[civil-sonar] Sent boundary to {}: civF={} foreignF={} shrineF={} zoneF={} Y=[{}, {}]",
+                    player.getName().getString(), ownFaces.size(), foreignFaces.size(), shrineResult.faces.size(), zoneResult.faces.size(),
                     String.format("%.0f", wallMinY), String.format("%.0f", wallMaxY));
         }
     }

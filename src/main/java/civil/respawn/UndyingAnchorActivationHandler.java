@@ -17,6 +17,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.UUID;
+
 /**
  * Handles undying anchor activation: right-click emerald with totem when structure is valid.
  * If already activated, does not consume totem.
@@ -76,7 +78,12 @@ public final class UndyingAnchorActivationHandler {
         if (entry != null && !entry.activated()) {
             tracker.reactivateAnchor(dim, x, y, z);
         } else {
-            tracker.onAnchorActivated(dim, x, y, z);
+            civil.faction.FactionManager fm = CivilServices.getFactionManager();
+            UUID factionId = null;
+            if (fm != null && fm.isInitialized()) {
+                factionId = fm.getOrCreateFactionForPlayer(player.getUUID(), player.getName().getString());
+            }
+            tracker.onAnchorActivated(dim, x, y, z, factionId);
         }
 
         CivilAdvancements.tryAward(player, CivilAdvancements.UNDYING_ANCHOR);

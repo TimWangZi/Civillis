@@ -18,13 +18,18 @@ public interface CivilStorage {
 
     // ========== Stored record types ==========
 
+    record StoredFaction(java.util.UUID id, String name, java.util.UUID owner,
+                         java.util.Set<java.util.UUID> members, int color, long createdAt) {}
     record StoredMobHead(String dim, int x, int y, int z, String skullType) {}
-    record StoredUndyingAnchor(String dim, int x, int y, int z, boolean activated, long lastUsedGlobal) {}
+    record StoredUndyingAnchor(String dim, int x, int y, int z, boolean activated, long lastUsedGlobal,
+                               java.util.UUID factionId) {}
 
     /** Farm shrine anchor = lit soul campfire block; {@code activated} must be true for persisted entries. */
-    record StoredFarmShrine(String dim, int x, int y, int z, boolean activated) {}
+    record StoredFarmShrine(String dim, int x, int y, int z, boolean activated,
+                            java.util.UUID factionId) {}
 
-    record StoredTownCenter(String dim, civil.civilization.TownCenterTracker.TownCenterEntry entry) {}
+    record StoredTownCenter(String dim, civil.civilization.TownCenterTracker.TownCenterEntry entry,
+                            java.util.UUID factionId) {}
 
     record StoredBaseScoreSource(
             String sourceId,
@@ -120,6 +125,12 @@ public interface CivilStorage {
     List<StoredTownCenter> loadTownCenters();
 
     void writeTownCenters(List<StoredTownCenter> snapshot);
+
+    // ========== Factions ==========
+
+    List<StoredFaction> loadFactions();
+
+    void writeFactions(List<StoredFaction> snapshot);
 
     // ========== Base score sources ==========
 

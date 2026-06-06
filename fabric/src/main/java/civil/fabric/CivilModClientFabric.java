@@ -11,6 +11,7 @@ import civil.civilization.ZoneTransitionPayload;
 import civil.towncenter.gui.TownCenterClientState;
 import civil.towncenter.network.TownCenterGuiSyncPayload;
 import civil.aura.AuraWallRenderer;
+import civil.aura.AuraPlayerWallRenderer;
 import civil.aura.SonarBoundaryPayload;
 import civil.aura.SonarChargePayload;
 import civil.respawn.UndyingAnchorCinematicEffect;
@@ -90,6 +91,7 @@ public class CivilModClientFabric implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(SonarBoundaryPayload.ID,
                 (payload, context) -> {
                     AuraWallRenderer.updateBoundaries(payload);
+                    AuraPlayerWallRenderer.updateBoundaries(payload);
                     var player = Minecraft.getInstance().player;
                     if (player != null) {
                         Map<Long, float[]> shrineZoneYMap = buildShrineZoneYMap(
@@ -129,6 +131,7 @@ public class CivilModClientFabric implements ClientModInitializer {
             Entity entity = mc.gameRenderer.getMainCamera().entity();
             if (entity != null) {
                 AuraWallRenderer.onRender(entity.getEyePosition(pt));
+                AuraPlayerWallRenderer.onRender(entity.getEyePosition(pt));
             }
         });
 

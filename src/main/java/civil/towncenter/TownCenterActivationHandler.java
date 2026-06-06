@@ -15,6 +15,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.UUID;
+
 /**
  * Town center player interactions: right-click activate/deactivate and block protection queries.
  */
@@ -60,7 +62,12 @@ public final class TownCenterActivationHandler {
         mainHand.shrink(1);
 
         if (firstActivation) {
-            if (!tracker.add(dim, x, y, z, 1, true, player.getUUID(), player.getName().getString())) {
+            civil.faction.FactionManager fm = CivilServices.getFactionManager();
+            UUID factionId = null;
+            if (fm != null && fm.isInitialized()) {
+                factionId = fm.getOrCreateFactionForPlayer(player.getUUID(), player.getName().getString());
+            }
+            if (!tracker.add(dim, x, y, z, 1, true, player.getUUID(), player.getName().getString(), factionId)) {
                 return failActivate(level, lecternPos);
             }
         } else {

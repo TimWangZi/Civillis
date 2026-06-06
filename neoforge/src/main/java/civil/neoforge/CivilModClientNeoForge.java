@@ -2,6 +2,7 @@ package civil.neoforge;
 
 import civil.ModMenuTypes;
 import civil.aura.AuraWallRenderer;
+import civil.aura.AuraPlayerWallRenderer;
 import civil.towncenter.gui.TownCenterMainScreen;
 import civil.towncenter.gui.TownCenterMenu;
 import civil.civilization.ZoneTransitionHud;
@@ -71,6 +72,7 @@ final class CivilModClientNeoForge {
         if (entity != null) {
             Vec3 cam = entity.getEyePosition(pt);
             AuraWallRenderer.onRender(cam);
+            AuraPlayerWallRenderer.onRender(cam);
         }
     }
 

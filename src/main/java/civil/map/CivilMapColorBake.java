@@ -56,6 +56,26 @@ public final class CivilMapColorBake {
 
     private CivilMapColorBake() {}
 
+    public static byte blendPackedMapByte(byte mapByte, byte tintBand, boolean edge, int factionColor) {
+        if (tintBand == CivilMapTintPalette.HIGH && factionColor != 0) {
+            int alpha = clamp255(alphaForBand(tintBand, edge));
+            int r = (factionColor >> 16) & 0xFF;
+            int g = (factionColor >> 8) & 0xFF;
+            int b = factionColor & 0xFF;
+            if (edge) {
+                int blended = lerpRgb(255, 255, 255, r, g, b, alpha);
+                return nearestMapByte(blended);
+            }
+            int base = MAP_BYTE_ARGB[mapByte & 0xFF];
+            int br = (base >> 16) & 0xFF;
+            int bg = (base >> 8) & 0xFF;
+            int bb = base & 0xFF;
+            int blended = lerpRgb(br, bg, bb, r, g, b, alpha);
+            return nearestMapByte(blended);
+        }
+        return blendPackedMapByte(mapByte, tintBand, edge);
+    }
+
     public static byte blendPackedMapByte(byte mapByte, byte tintBand, boolean edge) {
         if (tintBand != CivilMapTintPalette.HIGH
                 && tintBand != CivilMapTintPalette.MONSTER

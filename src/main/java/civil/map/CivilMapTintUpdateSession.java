@@ -90,6 +90,7 @@ public final class CivilMapTintUpdateSession {
         final MapItemSavedData mapData;
         final long traceStartNs;
         final Long2ByteOpenHashMap chunkTintThisUpdate = new Long2ByteOpenHashMap(256);
+        final it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap chunkFactionColor = new it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap(256);
         final CivilMapTintPaddingState padding = new CivilMapTintPaddingState();
         int pixelsProcessed;
         int pixelsBaked;
@@ -106,9 +107,12 @@ public final class CivilMapTintUpdateSession {
             if (chunkTintThisUpdate.containsKey(key)) {
                 return chunkTintThisUpdate.get(key);
             }
-            byte t = CivilMapTintLogic.computeTintForChunk(level, cx, cz, null);
-            chunkTintThisUpdate.put(key, t);
-            return t;
+            CivilMapTintPalette.ChunkTintEval eval = CivilMapTintPalette.evaluateTintForChunk(level, cx, cz, 0);
+            chunkTintThisUpdate.put(key, eval.band());
+            if (eval.factionColor() != 0) {
+                chunkFactionColor.put(key, eval.factionColor());
+            }
+            return eval.band();
         }
 
         boolean applyBakedUpdate(int mapX, int mapY, byte packedColor) {
@@ -140,7 +144,8 @@ public final class CivilMapTintUpdateSession {
             boolean edge =
                     CivilMapBakeEdgePixels.isEdgePixel(
                             mapX, mapY, band, mapData, padding, probe);
-            byte baked = CivilMapColorBake.blendPackedMapByte(packedColor, band, edge);
+            byte baked = CivilMapColorBake.blendPackedMapByte(packedColor, band, edge,
+                    chunkFactionColor.get(CivilMapTintLogic.packChunk(cx, cz)));
             if (baked != packedColor) {
                 pixelsBaked++;
             }

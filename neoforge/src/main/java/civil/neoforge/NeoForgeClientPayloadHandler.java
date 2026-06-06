@@ -1,6 +1,7 @@
 package civil.neoforge;
 
 import civil.aura.AuraWallRenderer;
+import civil.aura.AuraPlayerWallRenderer;
 import civil.aura.SonarBoundaryPayload;
 import civil.aura.SonarChargePayload;
 import civil.aura.SonarShockwaveEffect;
@@ -50,6 +51,7 @@ final class NeoForgeClientPayloadHandler {
 
     static void handleSonarBoundary(SonarBoundaryPayload payload, IPayloadContext context) {
         AuraWallRenderer.updateBoundaries(payload);
+        AuraPlayerWallRenderer.updateBoundaries(payload);
         var player = Minecraft.getInstance().player;
         if (player != null) {
             Map<Long, float[]> shrineZoneYMap = buildShrineZoneYMap(

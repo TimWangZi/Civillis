@@ -233,6 +233,16 @@ public final class TtlCacheService implements CivilizationCache {
             baseScoreSourcesDirty = false;
             baseScoreSourcesSnapshot = List.of();
         }
+        final boolean factionsDirty;
+        final List<CivilStorage.StoredFaction> factionsSnapshot;
+        final var factionManager = civil.CivilServices.getFactionManager();
+        if (factionManager != null && factionManager.isDirty()) {
+            factionsDirty = true;
+            factionsSnapshot = factionManager.snapshotAllFactions();
+        } else {
+            factionsDirty = false;
+            factionsSnapshot = List.of();
+        }
 
         return storage.submitOnIO(() -> {
             long flushStartMs = System.currentTimeMillis();
@@ -256,6 +266,10 @@ public final class TtlCacheService implements CivilizationCache {
             if (baseScoreSourcesDirty) {
                 storage.writeBaseScoreSources(baseScoreSourcesSnapshot);
                 if (baseScoreRegistry != null) baseScoreRegistry.clearSourcesDirty();
+            }
+            if (factionsDirty) {
+                storage.writeFactions(factionsSnapshot);
+                if (factionManager != null) factionManager.clearDirty();
             }
 
             Map<String, CScore> resolvedScoreUpserts = new HashMap<>(pendingScores);
