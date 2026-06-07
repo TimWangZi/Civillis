@@ -12,6 +12,7 @@ import civil.civilization.cache.TtlCacheService;
 import civil.civilization.VoxelChunkKey;
 import civil.civilization.BlockScanner;
 import civil.registry.DimensionPolicyRegistry;
+import civil.registry.RegionExclusionHelper;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
@@ -94,6 +95,11 @@ public final class ScalableCivilizationService implements CivilizationService {
         // long startTimeUs = CivilMod.DEBUG ? System.nanoTime() / 1000 : 0;
 
         if (!DimensionPolicyRegistry.policyFor(world).civilization()) {
+            return new CScore(0.0);
+        }
+
+        if (RegionExclusionHelper.isExcluded(world.dimension().identifier().toString(),
+                pos.getX() >> 4, pos.getZ() >> 4)) {
             return new CScore(0.0);
         }
 
@@ -249,6 +255,11 @@ public final class ScalableCivilizationService implements CivilizationService {
                 debugRecordL1Availability("invalid");
             }
             return Optional.empty();
+        }
+        if (RegionExclusionHelper.isExcluded(world.dimension().identifier().toString(), key.getCx(), key.getCz())) {
+            CScore zero = new CScore(0.0);
+            cacheService.getCache().putChunkCScore(world, key, zero);
+            return Optional.of(zero);
         }
         // Guard: if the chunk isn't available immediately, treat as unknown.
         if (getChunkNow(world, key.getCx(), key.getCz()) == null) {

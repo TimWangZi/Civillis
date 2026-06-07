@@ -1,0 +1,8 @@
+{
+  "_comment": "Example exclusion zone for a Sable sub-level plot. Replace coordinates with your actual plot position.",
+  "dimension": "minecraft:overworld",
+  "minChunkX": 1600,
+  "maxChunkX": 1615,
+  "minChunkZ": 3200,
+  "maxChunkZ": 3215
+}

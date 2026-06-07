@@ -30,6 +30,7 @@ import civil.registry.HeadTypeLoader;
 import civil.registry.DimensionPolicyLoader;
 import civil.registry.MobFleeEntityLoader;
 import civil.registry.PresenceKeepAliveLoader;
+import civil.registry.RegionExclusionLoader;
 import civil.registry.SpawnGateEntityLoader;
 import civil.registry.ZonePolicyLoader;
 import civil.civilization.ZoneTransitionPayload;
@@ -257,6 +258,7 @@ public class CivilModNeoForge {
         MobFleeEntityLoader.reload(manager);
         PresenceKeepAliveLoader.reload(manager);
         TownCenterLevelLoader.reload(manager);
+        RegionExclusionLoader.reload(manager);
         CivilMod.onHeadTypesReloaded();
     }
 
@@ -272,6 +274,7 @@ public class CivilModNeoForge {
         MobFleeEntityLoader.reload(manager);
         PresenceKeepAliveLoader.reload(manager);
         TownCenterLevelLoader.reload(manager);
+        RegionExclusionLoader.reload(manager);
         CivilMod.onHeadTypesReloaded();
     }
 
